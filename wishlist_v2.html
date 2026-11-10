@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>나의 여행 위시리스트 &amp; 여행 준비물</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --primary: #2a9d8f;
+    --primary-dark: #21867a;
+    --accent: #e76f51;
+    --bg: #f4f7f6;
+    --card-bg: #ffffff;
+    --text: #264653;
+    --muted: #6b7b82;
+    --border: #e0e6e5;
+  }
+
+  body {
+    font-family: "Apple SD Gothic Neo", "Malgun Gothic", "맑은 고딕", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    padding: 16px;
+  }
+
+  .container { max-width: 900px; margin: 0 auto; }
+
+  /* ===== 헤더 ===== */
+  header {
+    text-align: center;
+    padding: 28px 16px;
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    color: #fff;
+    border-radius: 18px;
+    margin-bottom: 24px;
+  }
+  header h1 { font-size: 1.6rem; margin-bottom: 8px; }
+  header p { font-size: 0.95rem; opacity: 0.95; }
+
+  /* ===== 섹션 공통 ===== */
+  section { margin-bottom: 32px; }
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+  .section-title {
+    font-size: 1.25rem;
+    padding-left: 10px;
+    border-left: 5px solid var(--primary);
+  }
+  
+  /* ===== 추가 버튼 ===== */
+  .add-btn {
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    padding: 8px 14px;
+    border-radius: 20px;
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s ease, transform 0.1s ease;
+  }
+  .add-btn:hover {
+    background: var(--primary-dark);
+  }
+  .add-btn:active {
+    transform: scale(0.97);
+  }
+
+  /* ===== 여행지 카드 ===== */
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 16px;
+  }
+  .card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+    text-align: center;
+    position: relative;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+  }
+  .card .icon { font-size: 3rem; margin-bottom: 8px; }
+  .card h3 { font-size: 1.2rem; margin-bottom: 12px; }
+  .card .info {
+    font-size: 0.92rem;
+    color: var(--muted);
+    margin: 4px 0;
+  }
+  .card .info strong { color: var(--text); }
+  
+  /* 카드 삭제 버튼 스타일 */
+  .card-delete-btn {
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    background: transparent;
+    border: none;
+    color: #ccc;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: color 0.15s ease;
+  }
+  .card-delete-btn:hover {
+    color: var(--accent);
+  }
+
+  /* ===== 모달창 ===== */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.5);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+    padding: 16px;
+  }
+  .modal-overlay.active {
+    display: flex;
+  }
+  .modal {
+    background: var(--card-bg);
+    border-radius: 16px;
+    width: 100%;
+    max-width: 400px;
+    padding: 24px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+    animation: modalUp 0.2s ease;
+  }
+  @keyframes modalUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+  .modal h3 {
+    font-size: 1.2rem;
+    margin-bottom: 16px;
+    color: var(--text);
+  }
+  .form-group {
+    margin-bottom: 14px;
+  }
+  .form-group label {
+    display: block;
+    font-size: 0.88rem;
+    color: var(--muted);
+    margin-bottom: 6px;
+    font-weight: 600;
+  }
+  .form-group input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    font-size: 0.95rem;
+    outline: none;
+    transition: border-color 0.15s ease;
+  }
+  .form-group input:focus {
+    border-color: var(--primary);
+  }
+  .modal-buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+  }
+  .modal-buttons button {
+    flex: 1;
+    padding: 10px;
+    border-radius: 10px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+  }
+  .btn-cancel {
+    background: #e0e6e5;
+    color: var(--text);
+  }
+  .btn-submit {
+    background: var(--primary);
+    color: #fff;
+  }
+  .btn-submit:hover { background: var(--primary-dark); }
+
+  /* ===== 체크리스트 ===== */
+  .counter {
+    background: var(--accent);
+    color: #fff;
+    display: inline-block;
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-weight: bold;
+    font-size: 0.95rem;
+    margin-bottom: 16px;
+  }
+  .category {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 18px 20px;
+    margin-bottom: 16px;
+  }
+  .category h3 {
+    font-size: 1.05rem;
+    margin-bottom: 12px;
+    color: var(--primary-dark);
+  }
+  .checklist { list-style: none; }
+  .checklist li {
+    display: flex;
+    align-items: center;
+    padding: 10px 8px;
+    border-radius: 10px;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.15s ease;
+  }
+  .checklist li:hover { background: #f0f7f5; }
+  .checklist li .box {
+    width: 24px;
+    height: 24px;
+    border: 2px solid var(--primary);
+    border-radius: 6px;
+    margin-right: 12px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    color: #fff;
+    transition: background 0.15s ease;
+  }
+  .checklist li.checked .box {
+    background: var(--primary);
+  }
+  .checklist li.checked .label {
+    text-decoration: line-through;
+    color: var(--muted);
+  }
+
+  /* ===== 외부 링크 버튼 ===== */
+  .links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: center;
+  }
+  .links a {
+    background: var(--primary);
+    color: #fff;
+    text-decoration: none;
+    padding: 12px 22px;
+    border-radius: 30px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    transition: background 0.15s ease;
+  }
+  .links a:hover { background: var(--primary-dark); }
+
+  footer {
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.82rem;
+    margin-top: 24px;
+    line-height: 1.8;
+  }
+
+  @media (max-width: 480px) {
+    header h1 { font-size: 1.3rem; }
+    .section-title { font-size: 1.1rem; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- 헤더 -->
+  <header>
+    <h1>✈️ 나의 여행 위시리스트 &amp; 여행 준비물</h1>
+    <p>가고 싶은 여행지를 한눈에 보고, 준비물을 하나씩 체크해 보세요!</p>
+  </header>
+
+  <!-- 여행지 카드 -->
+  <section>
+    <div class="section-header">
+      <h2 class="section-title">🌍 가고 싶은 여행지</h2>
+      <button class="add-btn" id="openModalBtn">＋ 여행지 추가</button>
+    </div>
+    <div class="cards" id="cardsContainer">
+      <div class="card">
+        <button class="card-delete-btn" title="삭제">&times;</button>
+        <div class="icon">🗼</div>
+        <h3>파리 (프랑스)</h3>
+        <p class="info">💰 예상 예산: <strong>약 250만원</strong></p>
+        <p class="info">📅 추천 시기: <strong>4~6월 (봄)</strong></p>
+      </div>
+      <div class="card">
+        <button class="card-delete-btn" title="삭제">&times;</button>
+        <div class="icon">⛩️</div>
+        <h3>교토 (일본)</h3>
+        <p class="info">💰 예상 예산: <strong>약 90만원</strong></p>
+        <p class="info">📅 추천 시기: <strong>11월 (단풍철)</strong></p>
+      </div>
+      <div class="card">
+        <button class="card-delete-btn" title="삭제">&times;</button>
+        <div class="icon">🌴</div>
+        <h3>제주도 (대한민국)</h3>
+        <p class="info">💰 예상 예산: <strong>약 50만원</strong></p>
+        <p class="info">📅 추천 시기: <strong>9~10월 (가을)</strong></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 여행지 추가 모달 -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal">
+      <h3>✨ 가고 싶은 여행지 추가</h3>
+      <form id="addDestinationForm">
+        <div class="form-group">
+          <label for="destIcon">아이콘 (이모지)</label>
+          <input type="text" id="destIcon" value="🏖️" required maxlength="5">
+        </div>
+        <div class="form-group">
+          <label for="destName">여행지 이름</label>
+          <input type="text" id="destName" placeholder="예: 스위스 (인터라켄)" required>
+        </div>
+        <div class="form-group">
+          <label for="destBudget">예상 예산</label>
+          <input type="text" id="destBudget" placeholder="예: 약 300만원" required>
+        </div>
+        <div class="form-group">
+          <label for="destSeason">추천 시기</label>
+          <input type="text" id="destSeason" placeholder="예: 7~8월 (여름)" required>
+        </div>
+        <div class="modal-buttons">
+          <button type="button" class="btn-cancel" id="closeModalBtn">취소</button>
+          <button type="submit" class="btn-submit">추가하기</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 체크리스트 -->
+  <section>
+    <h2 class="section-title" style="margin-bottom: 16px;">🧳 여행 준비물 체크리스트</h2>
+    <div class="counter" id="counter">0 / 0 개 완료</div>
+
+    <div class="category">
+      <h3>📄 서류 / 금융</h3>
+      <ul class="checklist">
+        <li><span class="box">✔</span><span class="label">여권 (유효기간 6개월 이상)</span></li>
+        <li><span class="box">✔</span><span class="label">항공권 / 숙소 예약 확인서</span></li>
+        <li><span class="box">✔</span><span class="label">여행자 보험</span></li>
+        <li><span class="box">✔</span><span class="label">환전 및 해외 결제 카드</span></li>
+      </ul>
+    </div>
+
+    <div class="category">
+      <h3>🔌 전자기기</h3>
+      <ul class="checklist">
+        <li><span class="box">✔</span><span class="label">휴대폰 및 충전기</span></li>
+        <li><span class="box">✔</span><span class="label">보조배터리</span></li>
+        <li><span class="box">✔</span><span class="label">멀티 어댑터 (해외용)</span></li>
+      </ul>
+    </div>
+
+    <div class="category">
+      <h3>💊 상비약 / 세면도구</h3>
+      <ul class="checklist">
+        <li><span class="box">✔</span><span class="label">상비약 (소화제, 진통제, 밴드)</span></li>
+        <li><span class="box">✔</span><span class="label">개인 세면도구 / 화장품</span></li>
+        <li><span class="box">✔</span><span class="label">선크림 / 상비 마스크</span></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 외부 링크 -->
+  <section>
+    <h2 class="section-title" style="margin-bottom: 16px;">🔗 예약 / 정보 사이트 바로가기</h2>
+    <div class="links">
+      <a href="https://www.google.com/flights" target="_blank" rel="noopener">✈️ 항공권 검색</a>
+      <a href="https://www.booking.com" target="_blank" rel="noopener">🏨 숙소 예약</a>
+      <a href="https://www.google.com/maps" target="_blank" rel="noopener">🗺️ 지도 / 길찾기</a>
+    </div>
+  </section>
+
+  <footer>
+    ※ 체크 상태 및 추가된 여행지는 브라우저를 닫으면 초기화됩니다.<br>
+    실제 예약·결제, 실시간 날씨·환율 정보는 제공하지 않습니다.
+  </footer>
+
+</div>
+
+<script>
+  // ===== 체크리스트 기능 =====
+  const items = document.querySelectorAll('.checklist li');
+  const counter = document.getElementById('counter');
+  const total = items.length;
+
+  function updateCounter() {
+    const checked = document.querySelectorAll('.checklist li.checked').length;
+    counter.textContent = checked + ' / ' + total + ' 개 완료';
+  }
+
+  items.forEach(function(item) {
+    item.addEventListener('click', function() {
+      item.classList.toggle('checked');
+      updateCounter();
+    });
+  });
+
+  updateCounter();
+
+  // ===== 여행지 추가 및 삭제 기능 (모달 & 카드 관리) =====
+  const modalOverlay = document.getElementById('modalOverlay');
+  const openModalBtn = document.getElementById('openModalBtn');
+  const closeModalBtn = document.getElementById('closeModalBtn');
+  const addDestinationForm = document.getElementById('addDestinationForm');
+  const cardsContainer = document.getElementById('cardsContainer');
+
+  // 모달 열기
+  openModalBtn.addEventListener('click', function() {
+    modalOverlay.classList.add('active');
+  });
+
+  // 모달 닫기
+  closeModalBtn.addEventListener('click', function() {
+    modalOverlay.classList.remove('active');
+  });
+
+  // 배경 클릭 시 모달 닫기
+  modalOverlay.addEventListener('click', function(e) {
+    if (e.target === modalOverlay) {
+      modalOverlay.classList.remove('active');
+    }
+  });
+
+  // 삭제 버튼 이벤트 바인딩 함수
+  function attachDeleteEvent(card) {
+    const deleteBtn = card.querySelector('.card-delete-btn');
+    deleteBtn.addEventListener('click', function() {
+      card.remove();
+    });
+  }
+
+  // 기존 카드들에 삭제 이벤트 연결
+  document.querySelectorAll('.card').forEach(function(card) {
+    attachDeleteEvent(card);
+  });
+
+  // 폼 제출 시 새로운 카드 생성
+  addDestinationForm.addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    const icon = document.getElementById('destIcon').value.trim() || '✈️';
+    const name = document.getElementById('destName').value.trim();
+    const budget = document.getElementById('destBudget').value.trim();
+    const season = document.getElementById('destSeason').value.trim();
+
+    // 새 카드 HTML 생성
+    const newCard = document.createElement('div');
+    newCard.className = 'card';
+    newCard.innerHTML = `
+      <button class="card-delete-btn" title="삭제">&times;</button>
+      <div class="icon">${icon}</div>
+      <h3>${name}</h3>
+      <p class="info">💰 예상 예산: <strong>${budget}</strong></p>
+      <p class="info">📅 추천 시기: <strong>${season}</strong></p>
+    `;
+
+    // 삭제 기능 연결 후 컨테이너에 추가
+    attachDeleteEvent(newCard);
+    cardsContainer.appendChild(newCard);
+
+    // 폼 초기화 및 모달 닫기
+    addDestinationForm.reset();
+    document.getElementById('destIcon').value = '🏖️';
+    modalOverlay.classList.remove('active');
+  });
+</script>
+</body>
+</html>
